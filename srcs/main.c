@@ -1,45 +1,77 @@
 #include "minishell.h"
 
-int main(int ac, char *av[], char *env[])
+int	run_cmd2(int f, char *env[])
 {
-	(void)av;
-	(void)ac;
-	t_redirect *redir_1;
-	// t_redirect *redir_2;
-	t_process *process_1;
-	// t_process *process_2;
-	int exit_code = 0;
-	char	**variable;
+	int	code;
+	int	pid;
+	char *cmd[] = {"sleep", "1", NULL};
 
-	variable = get_parent_variable(env);
-
-	char *cmd1[] = { "cd", ".", NULL };
-	redir_1 = create_redir_lst(WRITE_FILE, "get_unset");
-	// addback_redir_lst(&redir_1, create_redir_lst(HERE_DOC, "EOF"));
-	// addback_redir_lst(&redir_1, create_redir_lst(WRITE_FILE, "out"));
-	process_1 = create_process_lst(cmd1, redir_1);
-
-	// char *cmd2[] = {"env", NULL};
-	// redir_2 = create_redir_lst(READ_FILE, "text.txt");
-	// redir_2 = create_redir_lst(HERE_DOC, "EOF");
-	// redir_2 = create_redir_lst(WRITE_FILE, "test_env");
-	// addback_redir_lst(&redir_2, create_redir_lst(HERE_DOC, "end"));
-	// addback_redir_lst(&redir_2, create_redir_lst(READ_FILE, "text.txt"));
-	// addback_redir_lst(&redir_2, create_redir_lst(WRITE_FILE, "test_env"));
-	// process_2 = create_process_lst(cmd2, NULL);
-
-	// addback_process_lst(&process_1, process_2);
-	pipe_process_lst(&process_1);
-	exec_heredoc(process_1);
-	if (!(process_1->next))
-		exit_code = exec_process(process_1, process_1, &variable) << 8;
-	else
+	code = 0;
+	if (f == 0)
 	{
-		fork_process(process_1, &variable);
-		wait_process(process_1, &exit_code);
-		free_process_and_redir(process_1);
+		code = 42;
+		return(code);
 	}
-	print_str_array(variable);
-	free_str_arr(variable);
-	return (exit_code >> 8);
+	pid = fork();
+	if (pid == 0)
+	{
+		execve("/bin/sleep", cmd , env);
+		exit(1);
+	}
+	wait(&code);
+	return(code >> 8);
+}
+
+int	run_cmd1(int f, char *env[])
+{
+	int	code;
+	int	pid;
+	char *cmd[] = {"sleep-","5" , NULL};
+
+	code = 0;
+	if (f == 0)
+	{
+		code = 42;
+		return(code);
+	}
+	pid = fork();
+	if (pid == 0)
+	{
+		execve("/bin/sleep-", cmd, env);
+		exit(1);
+	}
+	wait(&code);
+	return(code >> 8);
+}
+
+int	main(int argc, char *argv[], char *env[])
+{
+	int		code;
+	int		temp;
+	int		pid;
+	int		pid1;
+	int		pid2;
+	int		i;
+
+	code = 0;
+	pid1 = fork();
+	if (pid1 == 0)
+	{
+		code = run_cmd1(1, env);
+		printf("fork1: %d\n", code);
+		exit(code);
+	}
+	pid2 = fork();
+	if (pid2 == 0)
+	{
+		code = run_cmd2(1, env);
+		printf("fork2: %d\n", code);
+		exit(code);
+	}
+	if (wait(&temp) == pid2)
+		code = temp;
+	if (wait(&temp) == pid2)
+		code = temp;
+	printf("%d\n", code >> 8);
+	return (code >> 8);
 }
